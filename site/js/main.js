@@ -323,31 +323,26 @@
 createHeatMap1 = function(index){
     $("#load-spinner").fadeIn(800);
     var heatMapData = [];
-    var property_list = JSON.parse(localStorage.getItem("property_list"));
-    console.dir(property_list);
-    for(i = 0; i <property_list.length; i++ ){
-        var item = property_list[i];
-        console.log(item.geoLocation);
-        var latLng = item.geoLocation.split(',');
-        heatMapData.push({location: new google.maps.LatLng(latLng[1], latLng[0]), weight:item.value[index]});
-    }
+    var property_list = localStorage.getItem("property_list");
+    console.log(property_list);
+    if(property_list == null){
+        alert("Just wait a moment, please!");
+        return
+    }else{
+        property_list = JSON.parse(property_list);
+        console.dir(property_list);
+        for(i = 0; i <property_list.length; i++ ){
+            var item = property_list[i];
+            console.log(item.geoLocation);
+            if(item.value){
+                var latLng = item.geoLocation.split(',');
+                heatMapData.push({location: new google.maps.LatLng(latLng[1], latLng[0]), weight:item.value[index]});
+            }
+        }
     
-   drawHeatMap(heatMapData);
-        return $("#load-spinner").fadeOut(800);
-   /*
-    _.map(property_list, function(plist) {
-        if (plist.length != 0){
-              for(i = 0; i < plist.length; i++){
-               var item = plist[i];
-                heatMapData.push({location:item.geoLocation, weight:item.value[index]});
-              }
         drawHeatMap(heatMapData);
         return $("#load-spinner").fadeOut(800);
-        }
-               }).fail(function(error){
-            return console.error("Failed to create heat map: " + (JSON.stringify(error)));
-        });
-        */
+    }
 }
 
   $(document).ready(function() {
