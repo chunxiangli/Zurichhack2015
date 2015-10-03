@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Geocoding service</title>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+    <meta charset="utf-8">
+    <style>
+      html, body {
+        height: 75%;
+        width: 50%;
+        margin: 0;
+        padding: 0;
+      }
+      #map {
+        height: 100%;
+      }
+#floating-panel {
+  position: absolute;
+  top: 10px;
+  left: 25%;
+  z-index: 5;
+  background-color: #fff;
+  padding: 5px;
+  border: 1px solid #999;
+  text-align: center;
+  font-family: 'Roboto','sans-serif';
+  line-height: 30px;
+  padding-left: 10px;
+}
+
+    </style>
+  </head>
+  <body>
+    <div id="floating-panel">
+      <input id="address" type="textbox" value="Zurich">
+      <input id="submit" type="button" value="Geocode">
+    </div>
+    <div id="map"></div>
+
+	<div id="myOutput"></div>
+	<h1>Hi There!</h1>
+	<button type="button" onclick="GetStations()">Get Stations</button>
+
+    <script>
+
+X = 0;
+Y = 0;
+ZIP = "";
+
+function GetStations()
+{
+    //var Url = "http://transport.opendata.ch/v1/locations?y=8.485383&x=47.3897661";
+    var Url = "http://transport.opendata.ch/v1/locations?y="+Y+"&x="+X;
+    var xmlHttp = new XMLHttpRequest(); 
+    xmlHttp.onreadystatechange = function() {
+	    if ( xmlHttp.readyState == 4 && xmlHttp.status == 200 ) 
+	    {
+	        if ( xmlHttp.responseText == "Not found" ) 
+	        {
+	            var el = document.getElementById("myOutput");
+	            el.innerHTML = "Not found";
+	        }
+	        else
+	        {
+	            var info = eval ( "(" + xmlHttp.responseText + ")" );
+	            var stations = info.stations;
+	            var el = document.getElementById("myOutput");
+	            el.innerHTML = "ZIP "+ZIP+"<br/>ST# "+stations.length;//JSON.stringify(info);
+	        }                    
+	    }
+    };
+    xmlHttp.open( "GET", Url, true );
+    xmlHttp.send( null );
+
+    GetApartments();
+}
+
+function GetApartments () {
+
+/*
+    var options = {
+	hostname: "api-2445581357976.apicast.io",
+	port: 443,
+	path: '/rs/real-estates?language=en&chooseType=rentflat',
+	method: 'GET',
+	//key: fs.readFileSync('./key.pem', 'utf8'),
+	//cert: fs.readFileSync('./cert.pem', 'utf8'),
+	//agent: false,
+	headers: {
+	    'User-Agent': 'curl/7.35.0',
+	    'Accept': 'application/json',
+	    'auth': '6dc609720c4fda936d0f3e66779e677b'
+	}
+    };
+*/	
+	var Url = "https://api-2445581357976.apicast.io:443/rs/real-estates?language=en&chooseType=rentflat";
+    var xmlHttp = new XMLHttpRequest(); 
+    xmlHttp.onreadystatechange = function() {
+	    if ( xmlHttp.readyState == 4 && xmlHttp.status == 200 ) 
+	    {
+	        if ( xmlHttp.responseText == "Not found" ) 
+	        {
+	            var el = document.getElementById("myOutput");
+	            el.innerHTML = "Not found";
+	        }
+	        else
+	        {
+	            var info = eval ( "(" + xmlHttp.responseText + ")" );
+	            var el = document.getElementById("myOutput");
+	            el.innerHTML = JSON.stringify(info);
+	        }                    
+	    }
+    };
+    xmlHttp.open( "GET", Url, true );
+    xmlHttp.setRequestHeader('Accept','application/json');
+    xmlHttp.setRequestHeader('auth','6dc609720c4fda936d0f3e66779e677b');
+    xmlHttp.send( null );
+
+}
+
+
+function initMap() {
+  var map = new google.maps.Map(document.getElementById('map'), {
+    zoom: 8,
+    //center: {lat: -34.397, lng: 150.644}
+    center: {lat: 47.377431, lng:8.539167}
+  });
+  var geocoder = new google.maps.Geocoder();
+
+  document.getElementById('submit').addEventListener('click', function() {
+    geocodeAddress(geocoder, map);
+  });
+}
+
+function geocodeAddress(geocoder, resultsMap) {
+  var address = document.getElementById('address').value;
+  geocoder.geocode({'address': address}, function(results, status) {
+    if (status === google.maps.GeocoderStatus.OK) {
+      var loc = results[0].geometry.location;
+      X = loc.H;
+      Y = loc.L;
+    var searchComponents = results[0].address_components;
+    $.each(searchComponents, function(){
+    	if (this.types[0]=="postal_code")
+    		ZIP=this.short_name;
+    });
+      resultsMap.setCenter(loc);
+      var marker = new google.maps.Marker({
+        map: resultsMap,
+        position: loc
+      });
+    } else {
+      alert('Geocode was not successful for the following reason: ' + status);
+    }
+  });
+}
+
+    </script>
+	<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.3/jquery.min.js"></script>
+	<script src="https://maps.googleapis.com/maps/api/js?callback=initMap" async defer></script>
+
+    <!--<script src="https://maps.googleapis.com/maps/api/js?key=API_KEY&signed_in=true&callback=initMap" async defer></script>-->
+  </body>
+</html>
