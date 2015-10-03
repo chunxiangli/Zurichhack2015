@@ -276,6 +276,9 @@
     if (visualization == "heatmap") {
       console.log("Show heat map for " + json_file + " index " + index);
       return createHeatMap(json_file, index);
+    }else if(visualization == "heatmap1"){
+      console.log("Show heat map for property list: index" + index);
+      return createHeatMap1(index);
     }
     else {
       console.log("Show route map type " + visualization + " " + json_file + " index " + index);
@@ -312,12 +315,40 @@
         drawHeatMap(heatMapData);
         return $("#load-spinner").fadeOut(800);
       }
-    }).fail(function(error) {
+      }) .fail(function(error) {
       return console.error("Failed to create heat map: " + (JSON.stringify(error)));
     });
-
   };
 
+createHeatMap1 = function(index){
+    $("#load-spinner").fadeIn(800);
+    var heatMapData = [];
+    var property_list = JSON.parse(localStorage.getItem("property_list"));
+    console.dir(property_list);
+    for(i = 0; i <property_list.length; i++ ){
+        var item = property_list[i];
+        console.log(item.geoLocation);
+        var latLng = item.geoLocation.split(',');
+        heatMapData.push({location: new google.maps.LatLng(latLng[1], latLng[0]), weight:item.value[index]});
+    }
+    
+   drawHeatMap(heatMapData);
+        return $("#load-spinner").fadeOut(800);
+   /*
+    _.map(property_list, function(plist) {
+        if (plist.length != 0){
+              for(i = 0; i < plist.length; i++){
+               var item = plist[i];
+                heatMapData.push({location:item.geoLocation, weight:item.value[index]});
+              }
+        drawHeatMap(heatMapData);
+        return $("#load-spinner").fadeOut(800);
+        }
+               }).fail(function(error){
+            return console.error("Failed to create heat map: " + (JSON.stringify(error)));
+        });
+        */
+}
 
   $(document).ready(function() {
     var clearUI;
@@ -339,7 +370,7 @@
       $("#visualization").removeClass("on");
       $("#explanation").html(""+$(e.currentTarget).data("description"));
       $("#figure").attr("src",$(e.currentTarget).data("fig"));
-      console.error("" + $(e.currentTarget).data("visualization") +
+      console.log("" + $(e.currentTarget).data("visualization") +
                          $(e.currentTarget).data("json") +
                          $(e.currentTarget).data("index") +
                          $(e.currentTarget).data("description"));
