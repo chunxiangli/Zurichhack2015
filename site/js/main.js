@@ -5,9 +5,7 @@
 // GPL v3
 
 (function() {
-  var activePolylines, addMapLine, clearMap, createIndividualPathTrail, createPathsOnMap, displayNotification, getActivePaths, getPathJobColor, initializeGoogleMaps, map, populateMap, hackAPI;
-
-  hackAPI = "http://dev.hel.fi/aura/v1/snowplow/data";
+  var activePolylines, addMapLine, clearMap, createIndividualPathTrail, createPathsOnMap, displayNotification, getActivePaths, initializeGoogleMaps, map, populateMap, imagePath, timer;
 
   activePolylines = [];
 
@@ -231,10 +229,12 @@
     });
   };
 
-  displayNotification = function(notificationText) {
-    var $notification;
-    $notification = $("#notification");
-    return $notification.empty().text(notificationText).slideDown(800).delay(5000).slideUp(800);
+  displayImage = function(on) {
+      if(1 == on){
+        rollImage();
+      }else{
+          clearTimeout(timer);
+      }
   };
 
   getActivePaths = function(routemap, index, callback) {
@@ -277,14 +277,21 @@
       console.log("Show heat map for " + json_file + " index " + index);
       return createHeatMap(json_file, index);
     }else if(visualization == "heatmap1"){
+      close_second(0, $("#time-filters li").filter(".active").data("description"));
       console.log("Show heat map for property list: index" + index);
-      return createHeatMap1(index);
+      return createHeatMap1(json_file, index);
     }
     else {
+        alert("Thanks for you opinion. Feature: "+json_file+" will be shown in the future!");
+//need remove
+/*
       console.log("Show route map type " + visualization + " " + json_file + " index " + index);
       return getActivePaths(json_file, index, function(index, json) {
         return createPathsOnMap(index, json);
-      });
+            });
+  */
+        return 1;
+
     }
   };
 
@@ -298,9 +305,6 @@
 
     $("#load-spinner").fadeIn(800);
     var heatMapData = [];
-    // Dynamic API:
-    //return $.getJSON("" + hackAPI + "?heatmap").done(function(json) {
-    // Static API:
     return $.getJSON(json_file).done(function(json) {
       if (json.length !== 0) {
         _.map(json, function(json_data) {
@@ -320,23 +324,27 @@
     });
   };
 
-createHeatMap1 = function(index){
+createHeatMap1 = function(field, index){
+    console.log('show field:', field);
     $("#load-spinner").fadeIn(800);
     var heatMapData = [];
     var property_list = localStorage.getItem("property_list");
-    console.log(property_list);
     if(property_list == null){
         alert("Just wait a moment, please!");
         return
     }else{
         property_list = JSON.parse(property_list);
-        console.dir(property_list);
         for(i = 0; i <property_list.length; i++ ){
             var item = property_list[i];
-            console.log(item.geoLocation);
-            if(item.value){
-                var latLng = item.geoLocation.split(',');
-                heatMapData.push({location: new google.maps.LatLng(latLng[1], latLng[0]), weight:item.value[index]});
+            var latLng = item.geoLocation.split(',');
+            if(field == 'value'){
+                if(item.value){
+                    heatMapData.push({location: new google.maps.LatLng(latLng[1], latLng[0]), weight:item.value[index]});
+                }
+            }else if(field == 'sellingPrice'){
+                var target_field = item.sellingPrice;
+                console.log(target_field);
+                heatMapData.push({location: new google.maps.LatLng(latLng[1], latLng[0]), weight:target_field});
             }
         }
     
@@ -345,26 +353,30 @@ createHeatMap1 = function(index){
     }
 }
 
+rollImage = function(){
+    $("#figure").attr("src",imagePath);
+    if(i < imagePath - 1){
+        ++i;
+    }else{
+        i = 0;
+    }
+    timer = setTimeout("rollImage()", 3000);
+}
+
   $(document).ready(function() {
     var clearUI;
+    close_second(1);
     clearUI = function() {
-      $("#notification").stop(true, false).slideUp(200);
       return $("#load-spinner").stop(true, false).fadeOut(200);
     };
-    if (localStorage["hackathon.userHasClosedInfo"]) {
-      $("#info").addClass("off");
-    }
     initializeGoogleMaps(populateMap, "heatmap", "realdata.json", 0);
-    $("#explanation").html($("#time-filters li").filter(".active").data("description"));
-    $("#figure").attr("src",$("#time-filters li").filter(".active").data("fig"));
+    //$("#figure").attr("src",$("#time-filters li").filter(".active").data("fig"));
     $("#time-filters li").on("click", function(e) {
       e.preventDefault();
       clearUI();
       $("#time-filters li").removeClass("active");
       $(e.currentTarget).addClass("active");
-      $("#visualization").removeClass("on");
-      $("#explanation").html(""+$(e.currentTarget).data("description"));
-      $("#figure").attr("src",$(e.currentTarget).data("fig"));
+      //$("#figure").attr("src",$(e.currentTarget).data("fig"));
       console.log("" + $(e.currentTarget).data("visualization") +
                          $(e.currentTarget).data("json") +
                          $(e.currentTarget).data("index") +
