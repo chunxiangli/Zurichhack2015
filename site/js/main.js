@@ -274,11 +274,11 @@
   populateMap = function(visualization, json_file, index) {
     clearMap();
     if (visualization == "heatmap") {
-      console.error("Show heat map for " + json_file + " index " + index);
+      console.log("Show heat map for " + json_file + " index " + index);
       return createHeatMap(json_file, index);
     }
     else {
-      console.error("Show route map type " + visualization + " " + json_file + " index " + index);
+      console.log("Show route map type " + visualization + " " + json_file + " index " + index);
       return getActivePaths(json_file, index, function(index, json) {
         return createPathsOnMap(index, json);
       });
