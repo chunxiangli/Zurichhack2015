@@ -22,7 +22,7 @@
 
   initializeGoogleMaps = function(callback, visualization, json_file, index) {
     var zurichCenter, mapOptions, styles;
-    zurichCenter = new google.maps.LatLng(47.4925, 19.0513);
+    zurichCenter = new google.maps.LatLng(47.3686, 8.5382);
     mapOptions = {
       center: zurichCenter,
       zoom: 12,
