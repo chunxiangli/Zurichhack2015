@@ -21,10 +21,10 @@
     });
 
   initializeGoogleMaps = function(callback, visualization, json_file, index) {
-    var helsinkiCenter, mapOptions, styles;
-    helsinkiCenter = new google.maps.LatLng(60.21, 24.940338);
+    var zurichCenter, mapOptions, styles;
+    zurichCenter = new google.maps.LatLng(47.4925, 19.0513);
     mapOptions = {
-      center: helsinkiCenter,
+      center: zurichCenter,
       zoom: 12,
       disableDefaultUI: true,
       zoomControl: true,
