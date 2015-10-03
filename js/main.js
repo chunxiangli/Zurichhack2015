@@ -5,11 +5,9 @@
 // GPL v3
 
 (function() {
-  var activePolylines, addMapLine, clearMap, createIndividualPathTrail, createPathsOnMap, displayNotification, getActivePaths, getPathJobColor, initializeGoogleMaps, map, populateMap, hackAPI;
+  var clearMap, initializeGoogleMaps, map, populateMap, imagePath, timer;
 
-  hackAPI = "http://dev.hel.fi/aura/v1/snowplow/data";
-
-  activePolylines = [];
+  imagePath = [];
 
   map = null;
   heatmap = new google.maps.visualization.HeatmapLayer({
@@ -21,10 +19,10 @@
     });
 
   initializeGoogleMaps = function(callback, visualization, json_file, index) {
-    var helsinkiCenter, mapOptions, styles;
-    helsinkiCenter = new google.maps.LatLng(60.21, 24.940338);
+    var zurichCenter, mapOptions, styles;
+    zurichCenter = new google.maps.LatLng(47.3686, 8.5382);
     mapOptions = {
-      center: helsinkiCenter,
+      center: zurichCenter,
       zoom: 12,
       disableDefaultUI: true,
       zoomControl: true,
@@ -204,84 +202,35 @@
               +("00"+(Math.floor(255*b)).toString(16)).slice(-2));
   }
 
-
-  addMapLine = function(PathData, value) {
-    var PathTrailColor, polyline, polylinePath;
-    PathTrailColor = getColormapRed(value,-0.2,0.2);
-    //PathTrailColor = getColormapRed(value,-0.1,0.1);
-    polylinePath = _.reduce(PathData, (function(accu, x) {
-      accu.push(new google.maps.LatLng(x.coords[1], x.coords[0]));
-      return accu;
-    }), []);
-    polyline = new google.maps.Polyline({
-      path: polylinePath,
-      geodesic: true,
-      strokeColor: PathTrailColor,
-      strokeWeight: 4,
-      strokeOpacity: 0.5
-    });
-    activePolylines.push(polyline);
-    return polyline.setMap(map);
-  };
-
+  
   clearMap = function() {
     heatmap.set('data', null);
-    return _.map(activePolylines, function(polyline) {
-      return polyline.setMap(null);
-    });
   };
 
-  displayNotification = function(notificationText) {
-    var $notification;
-    $notification = $("#notification");
-    return $notification.empty().text(notificationText).slideDown(800).delay(5000).slideUp(800);
-  };
-
-  getActivePaths = function(routemap, index, callback) {
-    $("#load-spinner").fadeIn(400);
-    return $.getJSON(routemap).done(function(json) {
-      if (json.length !== 0) {
-        callback(index, json);
-      } else {
-        displayNotification("No routes to show.");
+  displayImage = function(on) {
+      if(1 == on){
+        $("#figure_container").show();
+        rollImage();
+      }else{
+          $("#figure_container").off()
+          clearTimeout(timer);
       }
-      return $("#load-spinner").fadeOut(800);
-    }).fail(function(error) {
-      return console.error("Failed to fetch paths: " + (JSON.stringify(error)));
-    });
-  };
-
-  createIndividualPathTrail = function(value, StopId1, StopId2, historyData) {
-    $("#load-spinner").fadeIn(800);
-    return $.getJSON("routes/route-"+StopId1+"-"+StopId2+".json").done(function(json) {
-      if (json.length !== 0) {
-        _.map(json, function(onepath) {
-            return addMapLine(onepath, value);
-        });
-        return $("#load-spinner").fadeOut(800);
-      }
-    }).fail(function(error) {
-      return console.error("Failed to create path " + StopId1 + "-" + StopId2 + ": " + (JSON.stringify(error)));
-    });
-  };
-
-  createPathsOnMap = function(index, json) {
-    return _.each(json, function(x) {
-      return createIndividualPathTrail(x.value[index], x.id[0], x.id[1], json);
-    });
   };
 
   populateMap = function(visualization, json_file, index) {
     clearMap();
     if (visualization == "heatmap") {
-      console.error("Show heat map for " + json_file + " index " + index);
+      //console.log("Show heat map for " + json_file + " index " + index);
       return createHeatMap(json_file, index);
+    }else if(visualization == "heatmap1"){
+      close_second(0, $("#time-filters li").filter(".active").data("description"));
+      //console.log("Show heat map for property list: index" + index);
+      return createHeatMap1(json_file, index);
     }
     else {
-      console.error("Show route map type " + visualization + " " + json_file + " index " + index);
-      return getActivePaths(json_file, index, function(index, json) {
-        return createPathsOnMap(index, json);
-      });
+        alert("Thanks for you opinion. Feature: "+json_file+" will be shown in the future!");
+        return 1;
+
     }
   };
 
@@ -295,9 +244,6 @@
 
     $("#load-spinner").fadeIn(800);
     var heatMapData = [];
-    // Dynamic API:
-    //return $.getJSON("" + hackAPI + "?heatmap").done(function(json) {
-    // Static API:
     return $.getJSON(json_file).done(function(json) {
       if (json.length !== 0) {
         _.map(json, function(json_data) {
@@ -312,47 +258,84 @@
         drawHeatMap(heatMapData);
         return $("#load-spinner").fadeOut(800);
       }
-    }).fail(function(error) {
+      }) .fail(function(error) {
       return console.error("Failed to create heat map: " + (JSON.stringify(error)));
     });
-
   };
 
+createHeatMap1 = function(field, index){
+    $("#load-spinner").fadeIn(800);
+    var heatMapData = [];
+    var property_list = localStorage.getItem("property_list");
+
+    if(imagePath.length){
+        imagePath = [];
+    }
+
+    if(property_list == null){
+        alert("Just wait a moment, please!");
+        return
+    }else{
+        property_list = JSON.parse(property_list);
+        for(i = 0; i <property_list.length; i++ ){
+            var item = property_list[i];
+            var latLng = item.geoLocation.split(',');
+            
+           imagePath = imagePath.concat(item.pictures.slice(0, item.pictures.length));
+           if(field == 'value'){
+                if(item.value){
+                    heatMapData.push({location: new google.maps.LatLng(latLng[1], latLng[0]), weight:item.value[index]});
+                }
+            }else if(field == 'sellingPrice'){
+                var target_field = item.sellingPrice;
+                heatMapData.push({location: new google.maps.LatLng(latLng[1], latLng[0]), weight:target_field});
+            }
+        }
+    
+        drawHeatMap(heatMapData);
+       
+        $("#load-spinner").fadeOut(800);
+
+        return displayImage(1);
+    }
+}
+
+rollImage = function(){
+    $("#figure1").attr("src",imagePath[i]);
+    $("#figure2").attr("src",imagePath[i+1]);
+    $("#figure3").attr("src",imagePath[i+2]);
+    $("#figure4").attr("src",imagePath[i+3]);
+    if(i < imagePath.length - 5){
+        i = i + 4;
+    }else{
+        i = 0;
+    }
+    timer = setTimeout("rollImage()", 3000);
+}
 
   $(document).ready(function() {
     var clearUI;
+    close_second(1);
     clearUI = function() {
-      $("#notification").stop(true, false).slideUp(200);
       return $("#load-spinner").stop(true, false).fadeOut(200);
     };
-    if (localStorage["hackathon.userHasClosedInfo"]) {
-      $("#info").addClass("off");
-    }
-    initializeGoogleMaps(populateMap, "heatmap", "stop_1.json", 0);
-    $("#explanation").html($("#time-filters li").filter(".active").data("description"));
-    $("#figure").attr("src",$("#time-filters li").filter(".active").data("fig"));
+    initializeGoogleMaps(populateMap, "heatmap", "realdata.json", 0);
     $("#time-filters li").on("click", function(e) {
       e.preventDefault();
       clearUI();
       $("#time-filters li").removeClass("active");
       $(e.currentTarget).addClass("active");
-      $("#visualization").removeClass("on");
-      $("#explanation").html(""+$(e.currentTarget).data("description"));
-      $("#figure").attr("src",$(e.currentTarget).data("fig"));
-      console.error("" + $(e.currentTarget).data("visualization") +
+      /*
+      console.log("" + $(e.currentTarget).data("visualization") +
                          $(e.currentTarget).data("json") +
                          $(e.currentTarget).data("index") +
                          $(e.currentTarget).data("description"));
+      */
       return populateMap($(e.currentTarget).data("visualization"),
                          $(e.currentTarget).data("json"),
                          $(e.currentTarget).data("index"));
     });
-    $("#info-close, #info-button").on("click", function(e) {
-      e.preventDefault();
-      $("#info").toggleClass("off");
-      return localStorage["hackathon.userHasClosedInfo"] = true;
-    });
-    return $("#visualization-close, #visualization-button").on("click", function(e) {
+   return $("#visualization-close, #visualization-button").on("click", function(e) {
       e.preventDefault();
       return $("#visualization").toggleClass("on");
     });
