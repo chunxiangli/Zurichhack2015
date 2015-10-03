@@ -1,1 +1,0 @@
-# Zurichhack2015
